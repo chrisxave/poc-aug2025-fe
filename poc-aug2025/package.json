@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node serve.js"
+    "start": "node serve.cjs"
   },
   "dependencies": {
     "react": "^19.1.0",
