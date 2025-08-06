@@ -6,14 +6,14 @@ function App() {
   const [form, setForm] = useState({ product_name: "", price: "", description: "" });
 
   const fetchProducts = async () => {
-    const res = await fetch(`${API_URL}/products`);
+    const res = await fetch(`${API_URL}/table/products/rows`);
     const data = await res.json();
     setProducts(data);
   };
 
   const addProduct = async (e) => {
     e.preventDefault();
-    await fetch(`${API_URL}/products`, {
+    await fetch(`${API_URL}/table/products/rows`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
