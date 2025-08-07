@@ -1,0 +1,112 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: files-pvc
+  namespace: chris-emp
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ocs-external-storagecluster-cephfs
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: chris-emp
+data:
+  nginx.conf: |
+    pid /tmp/nginx.pid;
+    events {}
+    http {
+      include       mime.types;
+      default_type  application/octet-stream;
+
+      sendfile        on;
+      keepalive_timeout  65;
+
+      server {
+        listen 8080;
+        location / {
+          root   /usr/share/nginx/html;
+          autoindex on;
+          add_after_body /served-by.html;
+        }
+
+        location = /served-by.html {
+          default_type text/html;
+          return 200 "<hr><p>Served by pod: $hostname</p>";
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-fileserver
+  namespace: chris-emp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-fileserver
+  template:
+    metadata:
+      labels:
+        app: nginx-fileserver
+    spec:
+      containers:
+      - name: nginx
+        image: nginxinc/nginx-unprivileged:1.25
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: files
+          mountPath: /usr/share/nginx/html
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: files
+        persistentVolumeClaim:
+          claimName: files-pvc
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-fileserver
+  namespace: chris-emp
+spec:
+  selector:
+    app: nginx-fileserver
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nginx-fileserver
+  namespace: chris-emp
+spec:
+  to:
+    kind: Service
+    name: nginx-fileserver
+  port:
+    targetPort: 8080
+
