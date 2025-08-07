@@ -2,48 +2,28 @@ import { useState, useEffect } from "react";
 
 function App() {
   const API_URL = import.meta.env.VITE_API_URL;
-  console.log("API URL:", API_URL); // Cek apakah API_URL kebaca
-
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState({ product_name: "", price: "", description: "" });
 
   const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${API_URL}/table/products/rows`);
-      const data = await res.json();
-      console.log("Fetched products:", data); // Log isi data
-      setProducts(data);
-    } catch (error) {
-      console.error("Failed to fetch products:", error);
-    }
+    const res = await fetch(`${API_URL}/table/products/rows`);
+    const data = await res.json();
+    setProducts(data);
   };
 
   const addProduct = async (e) => {
     e.preventDefault();
-    try {
-      const res = await fetch(`${API_URL}/table/products/rows`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_name: form.product_name,
-          price: parseFloat(form.price),
-          description: form.description,
-        }),
-      });
-
-      const result = await res.json();
-      console.log("Add product result:", result);
-
-      if (!res.ok) {
-        alert(`Failed to add product: ${result?.detail || "Unknown error"}`);
-        return;
-      }
-
-      setForm({ product_name: "", price: "", description: "" });
-      fetchProducts();
-    } catch (error) {
-      console.error("Error adding product:", error);
-    }
+    await fetch(`${API_URL}/table/products/rows`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        product_name: form.product_name,
+        price: parseFloat(form.price),
+        description: form.description,
+      }),
+    });
+    setForm({ product_name: "", price: "", description: "" });
+    fetchProducts();
   };
 
   useEffect(() => {
@@ -107,4 +87,3 @@ function App() {
 }
 
 export default App;
-
